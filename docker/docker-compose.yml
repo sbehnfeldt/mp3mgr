@@ -1,0 +1,47 @@
+version: '3.5'
+
+networks:
+  backend:
+    driver: bridge
+
+services:
+  mysql:
+    build:
+      context: ./mysql
+      dockerfile: Dockerfile
+      args:
+        - MYSQL_VERSION=${MYSQL_VERSION}
+        - PROJECT_USER=${PROJECT_USER}
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${PROJECT_DATABASE}
+      - MYSQL_USER=${PROJECT_USER}
+      - MYSQL_PASSWORD=${PROJECT_PASSWORD}
+      - TZ=${TIMEZONE}
+    volumes:
+      - ${DATA_PATH_HOST}/mysql:/var/lib/mysql
+    ports:
+      - "${MYSQL_HOST_PORT}:${MYSQL_PORT}"
+    networks:
+      - backend
+
+  apache:
+    build:
+      context: ./apache
+      dockerfile: ./Dockerfile
+    volumes:
+      - ${APP_CODE_PATH_HOST}:/var/www
+    ports:
+      - "8080:80"
+      - "8443:443"
+    tty: true
+    networks:
+      - backend
+
+  workspace:
+    build:
+      context: ./workspace
+      dockerfile: ./Dockerfile
+    volumes:
+      - ${APP_CODE_PATH_HOST}:/var/www
+
