@@ -36,6 +36,18 @@ RUN mkdir -p /root/.ssh \
     && cat /root/insecure_id_rsa.pub >> /root/.ssh/authorized_keys \
     && rm -rf /root/insecure_id_rsa.pub
 
+############################################################################
+## Install Symfony
+############################################################################
+RUN curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh' | bash \
+    && apt install symfony-cli
+
+###########################################################################
+# Install MySQL Client Libraries
+###########################################################################
+RUN docker-php-ext-install mysqli pdo pdo_mysql
+
+
 WORKDIR /var/www
 
 CMD ["/usr/sbin/sshd", "-D"]

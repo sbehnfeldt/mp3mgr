@@ -44,4 +44,6 @@ services:
       dockerfile: ./Dockerfile
     volumes:
       - ${APP_CODE_PATH_HOST}:/var/www
+    networks:
+      - backend
 

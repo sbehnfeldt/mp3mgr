@@ -10,6 +10,12 @@ COPY xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 COPY 000-default.conf /etc/apache2/sites-available
 COPY default-ssl.conf /etc/apache2/sites-available
 
+###########################################################################
+# Install MySQL Client Libraries
+###########################################################################
+RUN docker-php-ext-install mysqli pdo pdo_mysql
+
+
 WORKDIR /var/www
 
 EXPOSE 8080/tcp
