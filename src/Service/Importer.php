@@ -51,19 +51,46 @@ class Importer
         $this->reader = $reader;
     }
 
-    public function importFile(string $filename): array
+    public function import(string $pathname)
+    {
+        $this->scanDirectory($pathname);
+    }
+
+
+    private function scanDirectory(string $dir)
+    {
+        $entries = scandir($dir);
+        foreach ($entries as $entry) {
+            if (in_array($entry, ['.', '..'])) {
+                continue;
+            }
+            $pathname = implode(DIRECTORY_SEPARATOR, [$dir, $entry]);
+            if (is_dir($pathname)) {
+                $this->scanDirectory($pathname);
+            } elseif (is_file($pathname)) {
+                $tags = $this->scanFile($pathname);
+                $this->importTags($tags);
+            } else {
+//                throw new \Exception( 'What?!');
+                continue;
+            }
+        }
+    }
+
+
+    public function scanFile(string $pathname): array
     {
         $tags = [];
         try {
 
             try {
-                $id3v2tag = $this->getReader()->readId3v2Tag($filename);
+                $id3v2tag = $this->getReader()->readId3v2Tag($pathname);
             } catch (Exception $e) {
                 return [];
             }
 
             $tags = [
-                'Filename' => $filename
+                'Filename' => $pathname
             ];
             foreach ($id3v2tag['frames'] as $frame) {
                 if (!array_key_exists($frame['identifier'], self::$tagNameMap)) {
@@ -78,14 +105,14 @@ class Importer
                 }
             }
             if (empty($artistName)) {
-                $temp = explode(DIRECTORY_SEPARATOR, $filename);
+                $temp = explode(DIRECTORY_SEPARATOR, $pathname);
                 $artistName = $temp[count($temp) - 3];
             }
             // TODO: See if artist is already in database; insert if not
 
 
             if (empty($albumName)) {
-                $temp = explode(DIRECTORY_SEPARATOR, $filename);
+                $temp = explode(DIRECTORY_SEPARATOR, $pathname);
                 $albumName = $temp[count($temp) - 2];
             }
             // TODO: See if album is already in adatabase; insert if not
@@ -95,5 +122,10 @@ class Importer
         }
 
         return $tags;
+    }
+
+    private function importTags(array $tags)
+    {
+        return;
     }
 }

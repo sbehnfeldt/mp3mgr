@@ -33,33 +33,8 @@ class AppController extends AbstractController
     )]
     public function import(Importer $importer): Response
     {
-        $this->importer = $importer;
         $dir = $this->getParameter('app.music_dir');
-        $this->importDirectory($dir);
+        $importer->import($dir);
         return $this->render('index.html.twig');
-    }
-
-    private function importDirectory(string $dir)
-    {
-        $entries = scandir($dir);
-        foreach ($entries as $entry) {
-            if (in_array($entry, ['.', '..'])) {
-                continue;
-            }
-            $pathname = implode(DIRECTORY_SEPARATOR, [$dir, $entry]);
-            if (is_dir($pathname)) {
-                $this->importDirectory($pathname);
-            } elseif ( is_file($pathname)) {
-                $this->importFile($pathname);
-            } else {
-//                throw new \Exception( 'What?!');
-                continue;
-            }
-        }
-    }
-
-    private function importFile(string $pathname) : array
-    {
-        return $this->importer->importFile($pathname);
     }
 }
