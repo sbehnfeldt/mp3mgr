@@ -26,11 +26,14 @@ class Mp3File
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $author = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?int $track = null;
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $albumAuthor = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?int $year = null;
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $track = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $year = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $length = null;
@@ -41,7 +44,7 @@ class Mp3File
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $genre = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -124,24 +127,40 @@ class Mp3File
         return $this;
     }
 
-    public function getTrack(): ?int
+    /**
+     * @return string|null
+     */
+    public function getAlbumAuthor(): ?string
+    {
+        return $this->albumAuthor;
+    }
+
+    /**
+     * @param string|null $albumAuthor
+     */
+    public function setAlbumAuthor(?string $albumAuthor): void
+    {
+        $this->albumAuthor = $albumAuthor;
+    }
+
+    public function getTrack(): ?string
     {
         return $this->track;
     }
 
-    public function setTrack(?int $track): self
+    public function setTrack(?string $track): self
     {
         $this->track = $track;
 
         return $this;
     }
 
-    public function getYear(): ?int
+    public function getYear(): ?string
     {
         return $this->year;
     }
 
-    public function setYear(?int $year): self
+    public function setYear(?string $year): self
     {
         $this->year = $year;
 

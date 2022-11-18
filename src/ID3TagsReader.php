@@ -168,11 +168,14 @@ class ID3TagsReader
 
         if (('T' == chr($unpacked['id1'])) && ('TXXX' !== $frame['identifier'])) {
             $enc = unpack('Cenc', $src);
-            $b = mb_check_encoding($src);
+            $mb = mb_check_encoding($src);
             switch ($enc['enc']) {
                 case 0:
                     // ISO-8859-1 [ISO-8859-1]. Terminated with $00.
                     $src = substr($src, 1);
+                    if ( !$mb ) {
+                        $src = iconv( 'ISO-8859-1', 'utf-8', $src );
+                    }
                     break;
 
                 case 1:

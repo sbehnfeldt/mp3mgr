@@ -2,13 +2,17 @@
 
 namespace App\Service;
 
+use App\Entity\Mp3File;
 use App\ID3TagsReader;
+use Doctrine\Persistence\ManagerRegistry;
 use Exception;
 use Psr\Log\LoggerInterface;
 
 class Importer
 {
     private ID3TagsReader $reader;
+
+    private ManagerRegistry $reg;
 
     private LoggerInterface $logger;
 
@@ -31,16 +35,18 @@ class Importer
         'COMM' => 'Comments',
         'TCOM' => 'Composer',
 
-        'APIC' => 'Album Art',
-        'PRIV' => 'Private data'
+        'APIC' => 'AlbumArt',
+        'PRIV' => 'PrivateData'
     ];
 
     /**
      * @param ID3TagsReader $reader
+     * @param LoggerInterface $logger
      */
-    public function __construct(ID3TagsReader $reader, LoggerInterface $logger)
+    public function __construct(ID3TagsReader $reader, ManagerRegistry $reg, LoggerInterface $logger)
     {
         $this->reader = $reader;
+        $this->reg = $reg;
         $this->logger = $logger;
     }
 
@@ -152,6 +158,25 @@ class Importer
      */
     private function importTags(array $tags)
     {
+        $em = $this->reg->getManager();
+        $mp3 = new Mp3File();
+        $mp3->setFilename($tags[ 'Filename']);
+        $mp3->setTitle($tags[ 'Title' ]);
+        $mp3->setAuthor($tags[ 'Author' ]);
+        $mp3->setAlbumAuthor($tags['AlbumAuthor']);
+        $mp3->setAlbumName($tags[ 'Album']);
+        $mp3->setGenre($tags[ 'Genre']);
+        $mp3->setComposer($tags[ 'Composer']);
+        $mp3->setTrack($tags['Track']);
+        $mp3->setYear($tags['Year']);
+//        $mp3->setComments($tags['Comments']);
+        $mp3->setCopyright($tags['Copyright']);
+        $mp3->setDescription($tags['Desc']);
+        $mp3->setAlbumArt($tags['AlbumArt']);
+//        $mp3->setPrivateData($tags['PrivateData']);
+
+        $em->persist($mp3);
+        $em->flush();
         return;
     }
 }
