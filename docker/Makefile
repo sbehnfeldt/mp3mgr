@@ -1,5 +1,5 @@
 include .env
-.PHONY: build-full up create start restart stop
+.PHONY: build create up down start restart stop build-full
 
 # Build images from Dockerfiles
 build :
