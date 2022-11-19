@@ -6,6 +6,7 @@ use App\Repository\Mp3FileRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
+
 #[ORM\Entity(repositoryClass: Mp3FileRepository::class)]
 class Mp3File
 {
@@ -15,7 +16,7 @@ class Mp3File
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    private ?string $filename = null;
+    private string $filename;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $title = null;

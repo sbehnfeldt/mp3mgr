@@ -155,11 +155,24 @@ class Importer
      * @return void
      *
      * TODO: Write the tags to the database.
+     * @throws Exception
      */
-    private function importTags(array $tags)
+    private function importTags(array $tags) : void
     {
         $em = $this->reg->getManager();
-        $mp3 = new Mp3File();
+        if ( !array_key_exists( 'Filename', $tags)) {
+            throw new Exception( 'Missing required filename' );
+        }
+
+        $mp3s = $em->getRepository(Mp3File::class)->findBy([
+            'filename' => $tags[ 'Filename' ]
+        ]);
+        if ( count($mp3s)) {
+            $mp3 = $mp3s[0];
+        } else{
+            $mp3 = new Mp3File();
+        }
+
         $mp3->setFilename($tags[ 'Filename']);
         $mp3->setTitle($tags[ 'Title' ]);
         $mp3->setAuthor($tags[ 'Author' ]);
