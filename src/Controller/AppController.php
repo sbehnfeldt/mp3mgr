@@ -35,6 +35,6 @@ class AppController extends AbstractController
     {
         $dir = $this->getParameter('app.music_dir');
         $importer->import($dir);
-        return $this->render('index.html.twig');
+        return $this->render('import.html.twig');
     }
 }

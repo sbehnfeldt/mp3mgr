@@ -79,7 +79,7 @@ class ID3TagsReader
      *
      * Read the MP3 ID3v2 header from an opened file
      */
-    function readId3Header($fd) : array
+    function readId3Header($fd): array
     {
         // Read the first part of the ID3v2 tag, which is the 10 byte tag header
         if (false === ($src = fread($fd, self::TAG_HEADER_LENGTH))) {
@@ -132,77 +132,80 @@ class ID3TagsReader
      * @return ?array
      * @throws Exception
      */
-    public function readNextFrame($fd) : ?array
+    public function readNextFrame($fd): ?array
     {
         // All ID3v2 frames [consist] of one frame header...
         if (false === ($src = fread($fd, self::FRAME_HEADER_LENGTH))) {
             throw new Exception(sprintf('Cannot read frame header'));
         }
-
-        $format = 'c4id/Nsize/nflags';
-        $unpacked = unpack($format, $src);
-
-
+        $unpacked = unpack('c4id/Nsize/nflags', $src);
         $frame = [
             'identifier' => chr($unpacked['id1']) . chr($unpacked['id2']) . chr($unpacked['id3']) . chr($unpacked['id4']),
             'size' => $unpacked['size'],
             'flags' => $unpacked['flags']
         ];
-        $b = preg_match('/[A-Z0-9]{4}/', $frame['identifier']);
-        if (false === $b) {
+
+        if (false === ($b = preg_match('/[A-Z0-9]{4}/', $frame['identifier']))) {
             throw new Exception(sprintf('Failure matching frame identifier "%s"', $frame['identifier']));
-        } else {
-            if (0 === $b) {
-                return null;
-            }
         }
-        if (0 == $unpacked['size']) {
-            return null;
-        }
+        if (0 === $b) return null;
+        if (0 == $unpacked['size']) return null;
 
 
         // ... followed by one or more fields containing the actual information
-        if (false === ($src = fread($fd, $unpacked['size']))) {
+        if (false === ($data = fread($fd, $unpacked['size']))) {
             throw new Exception(sprintf('Cannot read data encoding'));
         }
-
         if (('T' == chr($unpacked['id1'])) && ('TXXX' !== $frame['identifier'])) {
-            $enc = unpack('Cenc', $src);
-            $mb = mb_check_encoding($src);
+            $enc = unpack('Cenc', $data);
             switch ($enc['enc']) {
                 case 0:
-                    // ISO-8859-1 [ISO-8859-1]. Terminated with $00.
-                    $src = substr($src, 1);
-                    if ( !$mb ) {
-                        $src = iconv( 'ISO-8859-1', 'utf-8', $src );
-                    }
+                    $frame[ 'data' ] = $this->decode0(substr($data, 1));
                     break;
 
                 case 1:
-                    //  UTF-16 [UTF-16] encoded Unicode [UNICODE] with BOM.
-                    $src = substr($src, 1);   // Discard character encoding byte
-                    $utf = unpack('C2utf', $src);   // Get BOM
-                    if ((255 != $utf['utf1']) || (254 != $utf['utf2'])) {
-                        throw new Exception(sprintf('Unexpected BOM: %u, %u', $utf['utf1'], $utf['utf2']));
-                    }
-                    $src = substr($src, 2);;
+                    $frame[ 'data' ] = $this->decode1(substr($data, 1));
                     break;
 
                 case 2:
-                    // UTF-16BE [UTF-16] encoded Unicode [UNICODE] without BOM.
+                    // UTF-16BE-encoded Unicode without BOM.
                     throw new Exception(sprintf('Unhandled character encoding "%d" (%s)', $enc['enc'], mb_detect_encoding($src)));
 
                 case 3:
-                    // UTF-8 [UTF-8] encoded Unicode [UNICODE].
+                    // UTF-8 encoded Unicode
                     throw new Exception(sprintf('Unhandled character encoding "%d" (%s)', $enc['enc'], mb_detect_encoding($src)));
 
                 default:
-//                    $frame['data'] = $src;
+                    $data = '';
                     break;
             }
-        }
 
-        $frame['data'] = $src;
+        } elseif ( 'TXXX' === $frame[ 'identifier']) {
+            $frame[ 'data' ] = 'TXXX';
+
+        } elseif ( 'COMM' === $frame[ 'identifier']) {
+            // 4.10
+            $enc = unpack('Cenc', $data);
+            $comment = [
+                'lang' => substr($data, 1, 3 )
+            ];
+            switch ($enc['enc']) {
+                case 0:
+                    $comment[ 'comment' ] = $this->decode0(substr($data, 4));
+                    break;
+
+                case 1:
+                    $comment[ 'comment' ] = $this->decode1(substr($data, 4));
+                    break;
+
+                default:
+                    break;
+            }
+            $frame['data'] = $comment;
+
+        } else {
+            $frame[ 'data' ] = '';
+        }
 
         return $frame;
     }
@@ -217,17 +220,14 @@ class ID3TagsReader
      * The tag is returned as an associative array of header and an array of frames.
      * Each frame contains a 4-character string identifier, associated data, and some meta-data.
      */
-    public function readId3v2Tag(string $filepath) : array
+    public function readId3v2Tag(string $filepath): array
     {
         $id3v2tag = [];
         if (false === ($fd = fopen($filepath, 'r'))) {
             throw new Exception(sprintf('Cannot open file "%s"', $filepath));
         }
 
-        if (false === ($id3v2tag['header'] = $this->readId3Header($fd))) {
-            throw new Exception(sprintf('Cannot read MP3 tag header in "%s"', $filepath));
-        }
-
+        $id3v2tag['header'] = $this->readId3Header($fd);
         if ($id3v2tag['header']['fExtHdr']) {
             // TODO: Read extended header
             $id3v2tag['extHdr'] = [
@@ -258,5 +258,22 @@ class ID3TagsReader
         }
 
         return $id3v2tag;
+    }
+
+    // ISO-8859-1 [ISO-8859-1]. Terminated with $00.
+    private function decode0(string $s) : string {
+        if ( !mb_check_encoding($s)) {
+            $s = iconv( 'ISO-8859-1', 'utf-8', $s );
+        }
+        return $s;
+    }
+
+    //  UCS-2-encoded unicode w/ byte order mark
+    private function decode1(string $s) : string {
+        $bom = unpack('C2bom', $s );
+        if ((255 != $bom['bom1']) || (254 != $bom['bom2'])) {
+            throw new Exception(sprintf('Unexpected BOM: %u, %u', $bom['utf1'], $bom['utf2']));
+        }
+        return substr($s, 2);
     }
 }
