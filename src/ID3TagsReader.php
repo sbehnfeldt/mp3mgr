@@ -132,39 +132,25 @@ class ID3TagsReader
      * @return ?array
      * @throws Exception
      */
-    public function readNextFrame($fd): ?array
+    public function readNextFrame($fd): array|bool
     {
-        // All ID3v2 frames [consist] of one frame header...
-        if (false === ($src = fread($fd, self::FRAME_HEADER_LENGTH))) {
-            throw new Exception(sprintf('Cannot read frame header'));
+
+        if ( false === ($frame = $this->readFrameHeader($fd ))) {
+            return false;
         }
-        $unpacked = unpack('c4id/Nsize/nflags', $src);
-        $frame = [
-            'identifier' => chr($unpacked['id1']) . chr($unpacked['id2']) . chr($unpacked['id3']) . chr($unpacked['id4']),
-            'size' => $unpacked['size'],
-            'flags' => $unpacked['flags']
-        ];
 
-        if (false === ($b = preg_match('/[A-Z0-9]{4}/', $frame['identifier']))) {
-            throw new Exception(sprintf('Failure matching frame identifier "%s"', $frame['identifier']));
-        }
-        if (0 === $b) return null;
-        if (0 == $unpacked['size']) return null;
-
-
-        // ... followed by one or more fields containing the actual information
-        if (false === ($data = fread($fd, $unpacked['size']))) {
+        if (false === ($src = fread($fd, $frame['size']))) {
             throw new Exception(sprintf('Cannot read data encoding'));
         }
-        if (('T' == chr($unpacked['id1'])) && ('TXXX' !== $frame['identifier'])) {
-            $enc = unpack('Cenc', $data);
+        if (('T' == $frame['identifier'][0]) && ('TXXX' !== $frame['identifier'])) {
+            $enc = unpack('Cenc', $src);
             switch ($enc['enc']) {
                 case 0:
-                    $frame[ 'data' ] = $this->decode0(substr($data, 1));
+                    $frame[ 'data' ] = $this->decode0(substr($src, 1));
                     break;
 
                 case 1:
-                    $frame[ 'data' ] = $this->decode1(substr($data, 1));
+                    $frame[ 'data' ] = $this->decode1(substr($src, 1));
                     break;
 
                 case 2:
@@ -185,17 +171,19 @@ class ID3TagsReader
 
         } elseif ( 'COMM' === $frame[ 'identifier']) {
             // 4.10
-            $enc = unpack('Cenc', $data);
+            $enc = unpack('Cenc', $src);
+            $src = substr($src, 1 );
             $comment = [
-                'lang' => substr($data, 1, 3 )
+                'lang' => substr($src, 0, 3 )
             ];
+            $src = substr($src, 3 );
             switch ($enc['enc']) {
                 case 0:
-                    $comment[ 'comment' ] = $this->decode0(substr($data, 4));
+                    $comment[ 'comment' ] = $this->decode0($src);
                     break;
 
                 case 1:
-                    $comment[ 'comment' ] = $this->decode1(substr($data, 4));
+                    $comment[ 'comment' ] = $this->decodeComment($src);
                     break;
 
                 default:
@@ -205,6 +193,27 @@ class ID3TagsReader
 
         } else {
             $frame[ 'data' ] = '';
+        }
+
+        return $frame;
+    }
+
+
+    private function readFrameHeader( $fd ) : array|bool
+    {
+        if (false === ($hdr = fread($fd, self::FRAME_HEADER_LENGTH))) {
+            throw new Exception(sprintf('Cannot read frame header'));
+        }
+        $unpacked = unpack('c4id/Nsize/nflags', $hdr);
+        $frame = [
+            'identifier' => chr($unpacked['id1']) . chr($unpacked['id2']) . chr($unpacked['id3']) . chr($unpacked['id4']),
+            'size' => $unpacked['size'],
+            'flags' => $unpacked['flags']
+        ];
+
+        if (false === ($b = preg_match('/[A-Z0-9]{4}/', $frame['identifier'])) || (0 === $b) || ( 0 === $unpacked[ 'size' ])) {
+//            throw new Exception(sprintf('Failure matching frame identifier "%s"', $frame['identifier']));
+            return false;
         }
 
         return $frame;
@@ -253,7 +262,7 @@ class ID3TagsReader
         }
 
         $id3v2tag['frames'] = [];
-        while ($frame = $this->readNextFrame($fd)) {
+        while (false !== ($frame = $this->readNextFrame($fd))) {
             $id3v2tag['frames'][] = $frame;
         }
 
@@ -262,8 +271,8 @@ class ID3TagsReader
 
     // ISO-8859-1 [ISO-8859-1]. Terminated with $00.
     private function decode0(string $s) : string {
-        if ( !mb_check_encoding($s)) {
-            $s = iconv( 'ISO-8859-1', 'utf-8', $s );
+        if ( !mb_check_encoding($s, 'UTF-8')) {
+            $s = iconv( 'ISO-8859-1', 'UTF-8', $s );
         }
         return $s;
     }
@@ -274,6 +283,17 @@ class ID3TagsReader
         if ((255 != $bom['bom1']) || (254 != $bom['bom2'])) {
             throw new Exception(sprintf('Unexpected BOM: %u, %u', $bom['utf1'], $bom['utf2']));
         }
-        return substr($s, 2);
+        $s = substr($s, 2);
+        return $s;
+    }
+
+    private function decodeComment(string $s) : string
+    {
+        $bom = unpack( 'C4bom', $s);
+        if ((255 != $bom['bom1']) || (254 != $bom['bom2']) || (0 != $bom[ 'bom3' ]) || (0 != $bom[ 'bom4' ])) {
+            throw new Exception(sprintf('Unexpected BOM: %u, %u', $bom['utf1'], $bom['utf2']));
+        }
+        $s = substr($s, 4);
+        return $this->decode1($s);
     }
 }
