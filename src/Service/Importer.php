@@ -17,6 +17,7 @@ class Importer
     private LoggerInterface $logger;
 
     private static array $tagNameMap = [
+        'UFID' => '',
         'TIT2' => 'Title',
         'TALB' => 'Album',
         'TPE1' => 'Author',
@@ -125,27 +126,31 @@ class Importer
             if (!array_key_exists($frame['identifier'], self::$tagNameMap)) {
                 continue;
             }
-            $tagName = self::$tagNameMap[$frame['identifier']];
-            $tags[$tagName] = $frame['data'];
-            if ('TALB' === $frame['identifier']) {
-                $albumName = $frame['data'];
-            } elseif ('TPE1' === $frame['identifier']) {
-                $artistName = $frame['data'];
+            if ('UFID' === $frame['identifier']) {
+                $tags['UfidOwner'] = $frame['data'][0];
+                $tags['UfidIdentifier'] = $frame['data'][1];
+            } else {
+                $tagName = self::$tagNameMap[$frame['identifier']];
+                $tags[$tagName] = $frame['data'];
+                if ('TALB' === $frame['identifier']) {
+                    $albumName = $frame['data'];
+                } elseif ('TPE1' === $frame['identifier']) {
+                    $artistName = $frame['data'];
+                }
             }
-        }
-        if (empty($artistName)) {
-            $temp = explode(DIRECTORY_SEPARATOR, $pathname);
-            $artistName = $temp[count($temp) - 3];
-        }
-        // TODO: See if artist is already in database; insert if not
+            if (empty($artistName)) {
+                $temp = explode(DIRECTORY_SEPARATOR, $pathname);
+                $artistName = $temp[count($temp) - 3];
+            }
+            // TODO: See if artist is already in database; insert if not
 
 
-        if (empty($albumName)) {
-            $temp = explode(DIRECTORY_SEPARATOR, $pathname);
-            $albumName = $temp[count($temp) - 2];
+            if (empty($albumName)) {
+                $temp = explode(DIRECTORY_SEPARATOR, $pathname);
+                $albumName = $temp[count($temp) - 2];
+            }
+            // TODO: See if album is already in adatabase; insert if not
         }
-        // TODO: See if album is already in adatabase; insert if not
-
 
         return $tags;
     }
@@ -157,35 +162,37 @@ class Importer
      * TODO: Write the tags to the database.
      * @throws Exception
      */
-    private function importTags(array $tags) : void
+    private function importTags(array $tags): void
     {
         $em = $this->reg->getManager();
-        if ( !array_key_exists( 'Filename', $tags)) {
-            throw new Exception( 'Missing required filename' );
+        if (!array_key_exists('Filename', $tags)) {
+            throw new Exception('Missing required filename');
         }
 
         $mp3s = $em->getRepository(Mp3File::class)->findBy([
-            'filename' => $tags[ 'Filename' ]
+            'filename' => $tags['Filename']
         ]);
-        if ( count($mp3s)) {
+        if (count($mp3s)) {
             $mp3 = $mp3s[0];
-        } else{
+        } else {
             $mp3 = new Mp3File();
         }
 
-        $mp3->setFilename($tags[ 'Filename']);
-        $mp3->setTitle($tags[ 'Title' ]);
-        $mp3->setAuthor($tags[ 'Author' ]);
-        $mp3->setAlbumAuthor($tags['AlbumAuthor']);
-        $mp3->setAlbumName($tags[ 'Album']);
-        $mp3->setGenre($tags[ 'Genre']);
-        $mp3->setComposer($tags[ 'Composer']);
-        $mp3->setTrack($tags['Track']);
-        $mp3->setYear($tags['Year']);
+        $mp3->setFilename($tags['Filename']);
+        array_key_exists( 'UfidOwner', $tags) && $mp3->setUfidOwner($tags['UfidOwner']);
+        array_key_exists( 'UfidIdentifier', $tags) && $mp3->setUfidIdentifier($tags['UfidIdentifier']);
+        array_key_exists('Title', $tags) && $mp3->setTitle($tags['Title']);
+        array_key_exists('Author', $tags) && $mp3->setAuthor($tags['Author']);
+        array_key_exists('AlbumAuthor', $tags) && $mp3->setAlbumAuthor($tags['AlbumAuthor']);
+        array_key_exists('Album', $tags) && $mp3->setAlbumName($tags['Album']);
+        array_key_exists('Genre', $tags) && $mp3->setGenre($tags['Genre']);
+        array_key_exists('Composer', $tags) && $mp3->setComposer($tags['Composer']);
+        array_key_exists('Track', $tags) && $mp3->setTrack($tags['Track']);
+        array_key_exists('Year', $tags) && $mp3->setYear($tags['Year']);
 //        $mp3->setComments($tags['Comments']);
-        $mp3->setCopyright($tags['Copyright']);
-        $mp3->setDescription($tags['Desc']);
-        $mp3->setAlbumArt($tags['AlbumArt']);
+        array_key_exists('Copyright', $tags) && $mp3->setCopyright($tags['Copyright']);
+        array_key_exists('Desc', $tags) && $mp3->setDescription($tags['Desc']);
+        array_key_exists('AlbumArt', $tags) && $mp3->setAlbumArt($tags['AlbumArt']);
 //        $mp3->setPrivateData($tags['PrivateData']);
 
         $em->persist($mp3);

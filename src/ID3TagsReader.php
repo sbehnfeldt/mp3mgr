@@ -142,7 +142,16 @@ class ID3TagsReader
         if (false === ($src = fread($fd, $frame['size']))) {
             throw new Exception(sprintf('Cannot read data encoding'));
         }
-        if (('T' == $frame['identifier'][0]) && ('TXXX' !== $frame['identifier'])) {
+
+        if ( 'UFID' === $frame[ 'identifier']) {
+            $format = sprintf( 'C%dx', $frame['size' ]);
+            $temp = unpack( $format, $src );
+            $i = strpos( $src, 0 );
+            $ufid = explode( chr(0), $src );
+
+            $frame[ 'data' ] = $ufid;
+
+       } elseif (('T' == $frame['identifier'][0]) && ('TXXX' !== $frame['identifier'])) {
             $enc = unpack('Cenc', $src);
             switch ($enc['enc']) {
                 case 0:
@@ -167,7 +176,21 @@ class ID3TagsReader
             }
 
         } elseif ( 'TXXX' === $frame[ 'identifier']) {
-            $frame[ 'data' ] = 'TXXX';
+            $enc = unpack( 'Cenc', $src );
+            $src = substr($src, 1);
+            switch ( $enc[ 'enc' ]) {
+                case 0:
+                    $frame[ 'data' ] = $this->decode0($src);
+                    break;
+
+                case 1:
+                    $frame[ 'data' ] = $this->decodeComment($src);
+                    break;
+
+                default:
+                    $frame[ 'data' ] = '???';
+            }
+
 
         } elseif ( 'COMM' === $frame[ 'identifier']) {
             // 4.10

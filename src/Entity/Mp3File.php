@@ -18,6 +18,12 @@ class Mp3File
     #[ORM\Column(type: Types::TEXT)]
     private string $filename;
 
+    #[ORM\Column(length: 1024, nullable: true)]
+    private string $ufid_owner;
+
+    #[ORM\Column(length: 1024, nullable: true)]
+    private string $ufid_identifier;
+
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $title = null;
 
@@ -51,7 +57,7 @@ class Mp3File
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $encoded = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $copyright = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -90,6 +96,38 @@ class Mp3File
         $this->filename = $filename;
 
         return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUfidOwner(): string
+    {
+        return $this->ufid_owner;
+    }
+
+    /**
+     * @param string $ufid_owner
+     */
+    public function setUfidOwner(string $ufid_owner): void
+    {
+        $this->ufid_owner = $ufid_owner;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUfidIdentifier(): string
+    {
+        return $this->ufid_identifier;
+    }
+
+    /**
+     * @param string $ufid_identifier
+     */
+    public function setUfidIdentifier(string $ufid_identifier): void
+    {
+        $this->ufid_identifier = $ufid_identifier;
     }
 
     public function getTitle(): ?string
