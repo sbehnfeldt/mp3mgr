@@ -184,7 +184,7 @@ class ID3TagsReader
                     break;
 
                 case 1:
-                    $frame[ 'data' ] = $this->decodeComment($src);
+                    $frame[ 'data' ] = $this->decode1($src);
                     break;
 
                 default:
@@ -196,17 +196,20 @@ class ID3TagsReader
             // 4.10
             $enc = unpack('Cenc', $src);
             $src = substr($src, 1 );
-            $comment = [
-                'lang' => substr($src, 0, 3 )
-            ];
+            $comment[ 'lang' ] = substr($src, 0, 3 );
             $src = substr($src, 3 );
+
             switch ($enc['enc']) {
                 case 0:
-                    $comment[ 'comment' ] = $this->decode0($src);
+                    $split = explode( chr ( 0 ), $src);
+                    $comment[ 'desc' ] = $this->decode0($split[0]);
+                    $comment[ 'data' ] = $this->decode0($split[1]);
                     break;
 
                 case 1:
-                    $comment[ 'comment' ] = $this->decodeComment($src);
+                    $split = explode( chr( 0 ) . chr ( 0 ), $src);
+                    $comment[ 'desc' ] = $this->decode1($split[0]);
+                    $comment[ 'data' ] = $this->decode1($split[1]);
                     break;
 
                 default:
@@ -235,7 +238,6 @@ class ID3TagsReader
         ];
 
         if (false === ($b = preg_match('/[A-Z0-9]{4}/', $frame['identifier'])) || (0 === $b) || ( 0 === $unpacked[ 'size' ])) {
-//            throw new Exception(sprintf('Failure matching frame identifier "%s"', $frame['identifier']));
             return false;
         }
 
@@ -308,15 +310,5 @@ class ID3TagsReader
         }
         $s = substr($s, 2);
         return $s;
-    }
-
-    private function decodeComment(string $s) : string
-    {
-        $bom = unpack( 'C4bom', $s);
-        if ((255 != $bom['bom1']) || (254 != $bom['bom2']) || (0 != $bom[ 'bom3' ]) || (0 != $bom[ 'bom4' ])) {
-            throw new Exception(sprintf('Unexpected BOM: %u, %u', $bom['utf1'], $bom['utf2']));
-        }
-        $s = substr($s, 4);
-        return $this->decode1($s);
     }
 }
