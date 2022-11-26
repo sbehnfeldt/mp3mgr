@@ -170,7 +170,7 @@ class Importer
         }
 
         $mp3s = $em->getRepository(Mp3File::class)->findBy([
-            'filename' => $tags['Filename']
+            'filename_hash' => md5($tags['Filename'])
         ]);
         if (count($mp3s)) {
             $mp3 = $mp3s[0];
@@ -179,6 +179,7 @@ class Importer
         }
 
         $mp3->setFilename($tags['Filename']);
+        $mp3->setFilenameHash(md5($tags['Filename']));
         array_key_exists( 'UfidOwner', $tags) && $mp3->setUfidOwner($tags['UfidOwner']);
         array_key_exists( 'UfidIdentifier', $tags) && $mp3->setUfidIdentifier($tags['UfidIdentifier']);
         array_key_exists('Title', $tags) && $mp3->setTitle($tags['Title']);

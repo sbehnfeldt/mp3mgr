@@ -18,6 +18,9 @@ class Mp3File
     #[ORM\Column(type: Types::TEXT)]
     private string $filename;
 
+    #[ORM\Column(length:32, unique: true)]
+    private string $filename_hash;
+
     #[ORM\Column(length: 1024, nullable: true)]
     private string $ufid_owner;
 
@@ -97,6 +100,23 @@ class Mp3File
 
         return $this;
     }
+
+    /**
+     * @return string
+     */
+    public function getFilenameHash(): string
+    {
+        return $this->filename_hash;
+    }
+
+    /**
+     * @param string $filename_hash
+     */
+    public function setFilenameHash(string $filename_hash): void
+    {
+        $this->filename_hash = $filename_hash;
+    }
+
 
     /**
      * @return string
