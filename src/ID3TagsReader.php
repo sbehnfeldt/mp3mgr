@@ -309,6 +309,9 @@ class ID3TagsReader
             throw new Exception(sprintf('Unexpected BOM: %u, %u', $bom['utf1'], $bom['utf2']));
         }
         $s = substr($s, 2);
+        if ( !mb_check_encoding($s, 'UTF-8')) {
+            $s = iconv( 'ISO-8859-1', 'UTF-8', $s );
+        }
         return $s;
     }
 }

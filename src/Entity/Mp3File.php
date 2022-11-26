@@ -24,16 +24,16 @@ class Mp3File
     #[ORM\Column(length: 1024, nullable: true)]
     private string $ufid_identifier;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $title = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $album_name = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $author = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $albumAuthor = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -48,31 +48,31 @@ class Mp3File
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $lyric = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(length: 1024, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $genre = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $encoded = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(length: 1024, nullable: true)]
     private ?string $copyright = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $publisher = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $original_artist = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(length: 1024, nullable: true)]
     private ?string $url = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $comments = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $composer = null;
 
     #[ORM\Column(type: Types::BLOB, nullable: true)]
