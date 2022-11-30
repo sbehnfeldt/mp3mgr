@@ -1,4 +1,4 @@
-FROM php:8.1-cli
+FROM php:8.0-cli
 RUN apt-get update -yqq
 
 RUN apt-get update -yqq \
@@ -19,7 +19,7 @@ RUN dos2unix install-composer.sh && ./install-composer.sh && rm ./install-compos
 ############################################################################
 RUN pecl channel-update pecl.php.net
 ARG XDEBUG_VERSION
-RUN pecl -q install xdebug-3.1.4 \
+RUN pecl -q install xdebug-3.1.6 \
     && docker-php-ext-enable xdebug
 COPY xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 

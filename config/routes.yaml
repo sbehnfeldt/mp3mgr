@@ -1,4 +1,11 @@
 controllers:
     resource: ../src/Controller/
-    type: attribute
+    type: annotation
 
+kernel:
+    resource: ../src/Kernel.php
+    type: annotation
+
+import:
+    path: /import
+    controller: App\Controller\AppController::import
